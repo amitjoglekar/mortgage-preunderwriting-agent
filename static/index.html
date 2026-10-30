@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pre-Underwriting Agent</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar" aria-label="Loan files">
+    <div class="brand">
+      <svg viewBox="0 0 32 32" width="26" height="26" aria-hidden="true"><path d="M4 15 16 5l12 10v12H4z" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/><path d="m11 20 3.5 3.5L21 17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div>
+        <div class="brand-name">Pre-Underwriting Agent</div>
+        <div class="brand-sub">Fannie Mae conventional</div>
+      </div>
+    </div>
+    <button class="btn primary block" id="newLoanBtn">New loan file</button>
+    <div class="sample-row" id="sampleRow"></div>
+    <nav class="loan-list" id="loanList"></nav>
+    <div class="engine" id="engineBadge"></div>
+  </aside>
+
+  <main class="main" id="main">
+    <section class="empty-state" id="emptyState">
+      <h1>Start a loan file</h1>
+      <p>Create a file and upload the borrower's PDFs. The agent classifies each document, extracts the data, runs Fannie Mae eligibility rules and drafts conditions for your review.</p>
+      <div class="empty-actions">
+        <button class="btn primary" id="emptyNew">New loan file</button>
+        <span class="muted">or load a sample file from the sidebar</span>
+      </div>
+    </section>
+
+    <section class="loan" id="loanView" hidden>
+      <header class="loan-head">
+        <div class="loan-title-wrap">
+          <input class="loan-title" id="loanName" aria-label="Loan file name">
+          <div class="loan-meta" id="loanMeta"></div>
+        </div>
+        <div class="loan-settings">
+          <label class="field">
+            <span>Underwriting path</span>
+            <select id="methodSel">
+              <option value="du">Desktop Underwriter (DU)</option>
+              <option value="manual">Manual underwriting</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Expected note date</span>
+            <input type="date" id="noteDate">
+          </label>
+          <button class="btn ghost danger" id="deleteLoan" title="Delete this loan file">Delete</button>
+        </div>
+      </header>
+
+      <div class="verdict" id="verdict">
+        <div class="stamp" id="stamp"></div>
+        <dl class="kpis" id="kpis"></dl>
+      </div>
+
+      <div class="tabs" role="tablist">
+        <button role="tab" class="tab" data-tab="rules" aria-selected="true">Rule results <span class="count" id="cntRules"></span></button>
+        <button role="tab" class="tab" data-tab="docs">Documents <span class="count" id="cntDocs"></span></button>
+        <button role="tab" class="tab" data-tab="advice">Advisor memo <span class="dot" id="adviceDot" hidden></span></button>
+        <button role="tab" class="tab" data-tab="ask">Ask the agent</button>
+        <button role="tab" class="tab" data-tab="guide">Guidelines</button>
+      </div>
+
+      <section class="panel" data-panel="rules">
+        <div class="panel-bar">
+          <div class="seg" id="ruleFilter">
+            <button data-f="issues" class="on">Needs attention</button>
+            <button data-f="all">All rules</button>
+          </div>
+          <div class="legend" id="legend"></div>
+        </div>
+        <div id="rulesList"></div>
+      </section>
+
+      <section class="panel" data-panel="docs" hidden>
+        <label class="drop" id="drop">
+          <input type="file" id="fileInput" accept="application/pdf" multiple hidden>
+          <strong>Drop PDFs here or choose files</strong>
+          <span>Paystubs, W-2s, the loan application (1003), appraisal, bank statements, credit report. File names don't matter; the agent reads the content.</span>
+        </label>
+        <div id="uploadMsg" class="upload-msg" role="status"></div>
+        <table class="docs">
+          <thead><tr><th>File</th><th>Classified as</th><th class="num">Confidence</th><th>Status</th><th></th></tr></thead>
+          <tbody id="docsBody"></tbody>
+        </table>
+      </section>
+
+      <section class="panel" data-panel="advice" hidden>
+        <div class="panel-bar">
+          <div class="advice-status" id="adviceStatus"></div>
+          <button class="btn" id="adviceBtn">Regenerate memo</button>
+        </div>
+        <article class="memo" id="memo"></article>
+      </section>
+
+      <section class="panel" data-panel="ask" hidden>
+        <div class="chat" id="chat"></div>
+        <div class="suggest" id="suggest"></div>
+        <form class="ask" id="askForm">
+          <input id="askInput" placeholder="Ask about this file or a Fannie Mae guideline" autocomplete="off">
+          <button class="btn primary" type="submit">Ask</button>
+        </form>
+      </section>
+
+      <section class="panel" data-panel="guide" hidden>
+        <p class="guide-note">The rule engine and advisor use these Selling Guide summaries and thresholds. Verify against the current guide before relying on them, and add your own overlays.</p>
+        <div id="guideList"></div>
+      </section>
+    </section>
+  </main>
+</div>
+
+<div class="drawer-scrim" id="scrim" hidden></div>
+<aside class="drawer" id="drawer" aria-label="Document detail" hidden>
+  <header class="drawer-head">
+    <div>
+      <div class="drawer-title" id="dTitle"></div>
+      <div class="drawer-sub" id="dSub"></div>
+    </div>
+    <button class="btn ghost" id="dClose" aria-label="Close">Close</button>
+  </header>
+  <div class="drawer-body">
+    <iframe id="dPdf" title="PDF preview"></iframe>
+    <div class="drawer-fields">
+      <label class="field">
+        <span>Document type</span>
+        <select id="dType"></select>
+      </label>
+      <p class="rationale" id="dRationale"></p>
+      <form id="dForm"></form>
+      <div class="drawer-actions">
+        <button class="btn primary" id="dSave" type="button">Save corrections</button>
+        <button class="btn ghost danger" id="dDelete" type="button">Remove document</button>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<div class="toast" id="toast" role="status" hidden></div>
+<script src="/static/app.js"></script>
+</body>
+</html>

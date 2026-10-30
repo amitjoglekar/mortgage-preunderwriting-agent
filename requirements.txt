@@ -1,0 +1,9 @@
+starlette>=0.40
+uvicorn>=0.30
+python-multipart>=0.0.9
+pydantic>=2.6
+pdfplumber>=0.11
+python-dateutil>=2.9
+requests>=2.31
+reportlab>=4.0      # only needed to regenerate the sample PDFs
+pytest>=8.0         # tests
